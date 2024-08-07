@@ -23,10 +23,12 @@ def load_json_files(directory):
 # Function to extract baseScore from JSON content by searching for "baseScore"
 def extract_base_score(content_str):
     # Find all occurrences of "baseScore" and extract their values
-    matches = re.findall(r'"baseScore":\s*(\d+\.\d+)', content_str)
+    matches = re.findall(r'"baseScore":\s*(\d+(\.\d+)?)', content_str)
     if matches:
-        return float(matches[0])  # Use the first match, assuming it’s the relevant one
-    return 0  # Default baseScore if not found
+        # Convert the first match to float
+        base_score = float(matches[0][0])
+        return base_score
+    return 0.0  # Default baseScore if not found
 
 # Function to filter files by keyword and extract baseScore
 def filter_files_by_keyword(files_content, keyword):
@@ -73,7 +75,7 @@ def extract_details(json_content):
 files_content = load_json_files(found_keyword_dir)
 
 # Streamlit UI
-st.title("Latest CVE Files")
+st.title("CVE JSON Files Viewer")
 
 # Initialize session state to track which keyword and file details are shown
 if 'visible_keyword' not in st.session_state:
@@ -101,7 +103,7 @@ if st.session_state.visible_keyword:
     if sorted_files:
         st.write("### List of files with baseScore:")
         for filename, details in sorted_files:
-            button_label = f"{filename} (Base Score: {details['baseScore']})"
+            button_label = f"{filename} (Base Score: {details['baseScore']:.1f})"
             if st.button(button_label):
                 if st.session_state.visible_file == filename:
                     st.session_state.visible_file = None

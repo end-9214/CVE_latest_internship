@@ -5,7 +5,7 @@ import shutil
 # Define directories
 latest_files_dir = '/workspaces/codespaces-blank/latest_files'
 found_keyword_dir = '/workspaces/codespaces-blank/Found_Keyword_files'
-keywords = ['mitre', 'redhat', 'SamsungMobile']  # List of keywords to search for
+keywords = ['airflow', 'hackerone', 'SamsungMobile']  # List of keywords to search for
 
 # Create the directory for files with found keywords
 os.makedirs(found_keyword_dir, exist_ok=True)
@@ -47,5 +47,14 @@ else:
                 move_file(filepath, os.path.join(found_keyword_dir, filename))
             else:
                 print(f"No keywords found in {filename}")
+
+        # Delete all files from the latest_files directory
+        for filename in os.listdir(latest_files_dir):
+            file_path = os.path.join(latest_files_dir, filename)
+            try:
+                os.remove(file_path)
+                print(f"Deleted file: {file_path}")
+            except Exception as e:
+                print(f"Error deleting file {file_path}: {e}")
 
 print("Process completed.")
