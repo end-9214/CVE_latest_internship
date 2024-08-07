@@ -73,7 +73,7 @@ def extract_details(json_content):
 files_content = load_json_files(found_keyword_dir)
 
 # Streamlit UI
-st.title("CVE JSON Files Viewer")
+st.title("Latest CVE Files")
 
 # Initialize session state to track which keyword and file details are shown
 if 'visible_keyword' not in st.session_state:
