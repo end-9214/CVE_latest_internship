@@ -1,13 +1,42 @@
 import streamlit as st
 import os
 import json
+import csv
 import re
 
 # Directory containing the JSON files with keywords
 found_keyword_dir = '/workspaces/codespaces-blank/Found_Keyword_files'
+keywords_csv_path = '/workspaces/codespaces-blank/keywords.csv'
 
-# Keywords to search for (these can be made dynamic or user-defined)
-keywords = ['airflow', 'SamsungMobile', 'hackerone']
+# Load keywords from CSV file
+def load_keywords(csv_path):
+    if not os.path.exists(csv_path):
+        return []
+    
+    with open(csv_path, 'r') as file:
+        reader = csv.reader(file)
+        return [row[0] for row in reader]
+
+# Save a new keyword to the CSV file
+def save_keyword(keyword, csv_path):
+    keywords = load_keywords(csv_path)
+    if keyword in keywords:
+        st.warning(f"Keyword '{keyword}' already exists!")
+    else:
+        with open(csv_path, 'a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([keyword])
+        st.success(f"Keyword '{keyword}' added successfully!")
+
+# Delete a keyword from the CSV file
+def delete_keyword(keyword, csv_path):
+    keywords = load_keywords(csv_path)
+    keywords = [k for k in keywords if k != keyword]
+    
+    with open(csv_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        for k in keywords:
+            writer.writerow([k])
 
 # Function to load JSON files
 def load_json_files(directory):
@@ -22,10 +51,8 @@ def load_json_files(directory):
 
 # Function to extract baseScore from JSON content by searching for "baseScore"
 def extract_base_score(content_str):
-    # Find all occurrences of "baseScore" and extract their values
     matches = re.findall(r'"baseScore":\s*(\d+(\.\d+)?)', content_str)
     if matches:
-        # Convert the first match to float
         base_score = float(matches[0][0])
         return base_score
     return 0.0  # Default baseScore if not found
@@ -36,9 +63,7 @@ def filter_files_by_keyword(files_content, keyword):
     for filename, content in files_content.items():
         content_str = json.dumps(content)
         if keyword in content_str:
-            # Extract baseScore from the JSON content string
             base_score = extract_base_score(content_str)
-            
             filtered_files[filename] = {
                 "content": content,
                 "baseScore": base_score
@@ -71,46 +96,49 @@ def extract_details(json_content):
         "References": references
     }
 
-# Load JSON files from the directory
+# Load keywords and JSON files
+keywords = load_keywords(keywords_csv_path)
 files_content = load_json_files(found_keyword_dir)
 
 # Streamlit UI
 st.title("CVE JSON Files Viewer")
 
-# Initialize session state to track which keyword and file details are shown
-if 'visible_keyword' not in st.session_state:
-    st.session_state.visible_keyword = None
-if 'visible_file' not in st.session_state:
-    st.session_state.visible_file = None
+# Add new keyword
+st.write("### Add a new keyword")
+new_keyword = st.text_input("Enter keyword:")
+if st.button("Add Keyword"):
+    if new_keyword:
+        save_keyword(new_keyword, keywords_csv_path)
+        st.rerun()  # Refresh the page after adding a keyword
+
+# Delete an existing keyword
+st.write("### Delete an existing keyword")
+keyword_to_delete = st.selectbox("Select keyword to delete", options=keywords)
+if st.button("Delete Keyword"):
+    if keyword_to_delete:
+        delete_keyword(keyword_to_delete, keywords_csv_path)
+        st.success(f"Keyword '{keyword_to_delete}' deleted successfully!")
+        st.rerun()  # Refresh the page after deleting a keyword
 
 # Display list of keywords
 st.write("### List of Keywords:")
 for keyword in keywords:
     if st.button(keyword):
-        if st.session_state.visible_keyword == keyword:
-            st.session_state.visible_keyword = None
-        else:
-            st.session_state.visible_keyword = keyword
+        st.session_state.visible_keyword = keyword
 
 # Filter files based on selected keyword
-if st.session_state.visible_keyword:
+if 'visible_keyword' in st.session_state and st.session_state.visible_keyword:
     filtered_files = filter_files_by_keyword(files_content, st.session_state.visible_keyword)
 
-    # Sort files by baseScore in descending order
     sorted_files = sorted(filtered_files.items(), key=lambda x: x[1]['baseScore'], reverse=True)
 
-    # Display list of files as buttons
     if sorted_files:
         st.write("### List of files with baseScore:")
         for filename, details in sorted_files:
             button_label = f"{filename} (Base Score: {details['baseScore']:.1f})"
             if st.button(button_label):
-                if st.session_state.visible_file == filename:
-                    st.session_state.visible_file = None
-                else:
-                    st.session_state.visible_file = filename
+                st.session_state.visible_file = filename
 
-            # Display details if this file is the visible one
             if st.session_state.visible_file == filename:
                 selected_file_content = details['content']
                 file_details = extract_details(selected_file_content)
