@@ -25,5 +25,5 @@ while True:
     
     # Step 3: Wait for 20 seconds
     print("Waiting for 20 seconds...")
-    time.sleep(20) 
+    time.sleep(4*3600) 
 

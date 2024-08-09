@@ -8,7 +8,7 @@ repo = 'cvelistV5'
 token = 'auth_token'  # Replace with your actual GitHub token
 
 # Define time window (1 hour ago)
-time_window = datetime.utcnow() - timedelta(seconds=20)
+time_window = datetime.utcnow() - timedelta(hours=48)
 
 # GitHub API URL for commits
 commits_url = f'https://api.github.com/repos/{owner}/{repo}/commits'

@@ -83,7 +83,9 @@ def extract_details(json_content):
             for desc in problem.get('descriptions', []) if 'affected' in desc.get('description', '')
         ]
     
+    # Correctly extract metrics if available
     metrics = json_content.get('containers', {}).get('cna', {}).get('metrics', [])
+    
     references = json_content.get('containers', {}).get('cna', {}).get('references', [])
     
     selected_descriptions = affected_descriptions if affected_descriptions else descriptions
@@ -95,6 +97,13 @@ def extract_details(json_content):
         "Metrics": metrics,
         "References": references
     }
+
+# Initialize session state
+if 'visible_keyword' not in st.session_state:
+    st.session_state.visible_keyword = None
+
+if 'visible_file' not in st.session_state:
+    st.session_state.visible_file = None
 
 # Load keywords and JSON files
 keywords = load_keywords(keywords_csv_path)
@@ -109,7 +118,7 @@ new_keyword = st.text_input("Enter keyword:")
 if st.button("Add Keyword"):
     if new_keyword:
         save_keyword(new_keyword, keywords_csv_path)
-        st.rerun()  # Refresh the page after adding a keyword
+        st.experimental_rerun()  # Refresh the page after adding a keyword
 
 # Delete an existing keyword
 st.write("### Delete an existing keyword")
@@ -118,7 +127,7 @@ if st.button("Delete Keyword"):
     if keyword_to_delete:
         delete_keyword(keyword_to_delete, keywords_csv_path)
         st.success(f"Keyword '{keyword_to_delete}' deleted successfully!")
-        st.rerun()  # Refresh the page after deleting a keyword
+        st.experimental_rerun()  # Refresh the page after deleting a keyword
 
 # Display list of keywords
 st.write("### List of Keywords:")
@@ -127,7 +136,7 @@ for keyword in keywords:
         st.session_state.visible_keyword = keyword
 
 # Filter files based on selected keyword
-if 'visible_keyword' in st.session_state and st.session_state.visible_keyword:
+if st.session_state.visible_keyword:
     filtered_files = filter_files_by_keyword(files_content, st.session_state.visible_keyword)
 
     sorted_files = sorted(filtered_files.items(), key=lambda x: x[1]['baseScore'], reverse=True)
@@ -150,7 +159,10 @@ if 'visible_keyword' in st.session_state and st.session_state.visible_keyword:
                     st.write(f"- {desc}")
                 
                 st.write("**Metrics**:")
-                st.json(file_details['Metrics'])
+                if file_details['Metrics']:  # Check if metrics is not empty
+                    st.json(file_details['Metrics'])
+                else:
+                    st.write("No metrics available.")
                 
                 st.write("**References**:")
                 for ref in file_details['References']:
